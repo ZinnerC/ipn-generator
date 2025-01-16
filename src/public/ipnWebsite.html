@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internal Part Number Generator</title>
+    <!-- Use Tabler Icons CDN for simplicity -->
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            margin: 50px;
+        }
+        .container {
+            margin: 20px;
+            max-width: 600px;
+        }
+        .button-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .button-group select {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .button-group select:hover {
+            background-color: #e6e6e6;
+            border-color: #aaa;
+        }
+        .icon-button {
+            cursor: pointer;
+            font-size: 24px;
+            vertical-align: middle;
+            transition: transform 0.5s, opacity 0.3s;
+            transform-origin: center;
+        }
+        .icon-button:hover {
+            opacity: 0.5;
+        }
+        #output {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .copy-icon {
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+            transition: color 0.3s, opacity 0.3s;
+        }
+        .copy-icon:hover {
+            opacity: 0.5;
+        }
+        .copy-icon.copied {
+            color: green;
+        }
+        #copyMessage {
+            margin-top: 10px;
+            font-size: 16px;
+            color: green;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+        #copyMessage.hidden {
+            opacity: 0;
+        }
+        #loginForm, #mainContent, .history-container {
+            display: none;
+        }
+        .history-container {
+            margin-left: 20px;
+            width: 100%;
+        }
+        .history {
+            height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+        .history table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .history th, .history td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .history th {
+            cursor: pointer;
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .history th:hover {
+            background-color: #e6e6e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Internal Part Number Generator</h1>
+        <div id="loginForm" class="container">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username"><br><br>
+            <input type="password" id="password" placeholder="Password" onkeydown="if (event.key === 'Enter') login()"><br><br>
+            <button onclick="login()">Login</button>
+            <div id="loginMessage" style="color: red; margin-top: 10px;"></div>
+        </div>
+        <div id="mainContent" class="container">
+            <div id="userInfo" style="margin-bottom: 20px;"></div>
+            <div class="button-group">
+                <select id="serialType">
+                    <option value="11">11 - SWX Assemblies</option>
+                    <option value="12">12 - SWX Parts</option>
+                    <option value="21">21 - KiCAD PCBs</option>
+                    <option value="31">31 - Cable Harnesses</option>
+                    <option value="32">32 - Cables</option>
+                    <option value="51">51 - Standard Parts</option>
+                    <option value="52">52 - Offshelf Parts</option>
+                    <option value="59">59 - Tools and Others</option>
+                </select>
+                <i class="ti ti-circle-plus icon-button" onclick="generateAndChangeIcon(this)"></i>
+            </div>
+            <div id="output">Your IPN will appear here.</div>
+            <div id="copyMessage"></div>
+            <button style="margin-top: 20px;" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    <h2>History</h2>
+    <div class="history-container">
+        <div class="history">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Date</th>
+                        <th onclick="sortTable(1)">User</th>
+                        <th onclick="sortTable(2)">IPN</th>
+                    </tr>
+                </thead>
+                <tbody id="historyContent"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let users = [];
+        let history = [];
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/users');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                users = await response.json();
+                console.log('Users fetched:', users);
+            } catch (error) {
+                console.error('Failed to fetch users:', error);
+            }
+        }
+
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const loginMessage = document.getElementById("loginMessage");
+
+            const user = users.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                setCookie("loggedIn", "true", 1); // Set a cookie for 1 day
+                setCookie("username", username, 1); // Set a cookie for the username
+                showMainContent();
+            } else {
+                loginMessage.textContent = "Invalid username or password";
+            }
+        }
+
+        function logout() {
+            setCookie("loggedIn", "", -1); // Clear the cookie
+            setCookie("username", "", -1); // Clear the cookie
+            document.getElementById("mainContent").style.display = "none";
+            document.querySelector(".history-container").style.display = "none";
+            document.getElementById("loginForm").style.display = "block";
+        }
+
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function showMainContent() {
+            const username = getCookie("username");
+            document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("mainContent").style.display = "block";
+            document.querySelector(".history-container").style.display = "block";
+            fetchHistory();
+        }
+
+        let counters = {};
+        let selectedType = "11"; // Default selected type
+
+        async function fetchCounters() {
+            const response = await fetch('/counters');
+            counters = await response.json();
+        }
+
+        async function updateCounters() {
+            await fetch('/counters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(counters)
+            });
+        }
+
+        async function generateIPN() {
+            const type = document.getElementById("serialType").value;
+            counters[type]++;
+            const ipn = `${type}-${counters[type].toString().padStart(6, '0')}`;
+            const username = getCookie("username");
+            const date = new Date().toLocaleString();
+            const historyItem = { date, username, ipn };
+            history.unshift(historyItem);
+            if (history.length > 50) history.pop();
+            await updateHistory();
+            document.getElementById("output").innerHTML = `Generated IPN: <span onclick="copyGeneratedIPN('${ipn}')" style="cursor: pointer;">${ipn}</span> <i class="ti ti-copy copy-icon" onclick="copyToClipboard('${ipn}', this)"></i>`;
+            await updateCounters();
+            displayHistory();
+        }
+
+        function generateAndChangeIcon(iconElement) {
+            iconElement.classList.remove('ti-circle-plus');
+            iconElement.classList.add('ti-circle-plus-filled');
+            generateIPN();
+            setTimeout(() => {
+                iconElement.classList.remove('ti-circle-plus-filled');
+                iconElement.classList.add('ti-circle-plus');
+            }, 2000);
+        }
+
+        function copyToClipboard(ipn, iconElement) {
+            copyTextToClipboard(ipn).then(() => {
+                iconElement.classList.add('copied');
+                iconElement.classList.remove('ti-copy');
+                iconElement.classList.add('ti-copy-check');
+                const copyMessage = document.getElementById("copyMessage");
+                copyMessage.textContent = "IPN copied to clipboard: " + ipn;
+                setTimeout(() => {
+                    iconElement.classList.remove('copied');
+                    iconElement.classList.remove('ti-copy-check');
+                    iconElement.classList.add('ti-copy');
+                    copyMessage.classList.add('hidden');
+                }, 2000);
+                copyMessage.classList.remove('hidden');
+            }).catch(err => {
+                console.error("Failed to copy IPN: ", err);
+            });
+        }
+
+        function copyGeneratedIPN(ipn) {
+            copyTextToClipboard(ipn).then(() => {
+                const copyMessage = document.getElementById("copyMessage");
+                copyMessage.textContent = "IPN copied to clipboard: " + ipn;
+                setTimeout(() => {
+                    copyMessage.classList.add('hidden');
+                }, 2000);
+                copyMessage.classList.remove('hidden');
+            }).catch(err => {
+                console.error("Failed to copy IPN: ", err);
+            });
+        }
+
+        function copyTextToClipboard(text) {
+            return new Promise((resolve, reject) => {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(resolve).catch(reject);
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";  // Avoid scrolling to bottom
+                    textArea.style.opacity = "0";  // Hide the textarea
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                }
+            });
+        }
+
+        async function updateHistory() {
+            await fetch('/history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(history)
+            });
+        }
+
+        async function fetchHistory() {
+            const response = await fetch('/history');
+            history = await response.json();
+            displayHistory();
+        }
+
+        function displayHistory() {
+            const historyContent = document.getElementById("historyContent");
+            historyContent.innerHTML = "";
+            history.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>${item.date}</td><td>${item.username}</td><td>${item.ipn}</td>`;
+                historyContent.appendChild(row);
+            });
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.querySelector(".history table");
+            const rows = Array.from(table.rows).slice(1); // Exclude header row
+            const isAscending = table.getAttribute("data-sort-asc") === "true";
+            rows.sort((a, b) => {
+                const cellA = a.cells[columnIndex].innerText;
+                const cellB = b.cells[columnIndex].innerText;
+                return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+            rows.forEach(row => table.appendChild(row));
+            table.setAttribute("data-sort-asc", !isAscending);
+        }
+
+        // Fetch users and counters when the page loads
+        window.onload = async () => {
+            await fetchUsers();
+            await fetchCounters();
+            if (getCookie("loggedIn") === "true") {
+                showMainContent();
+            } else {
+                document.getElementById("loginForm").style.display = "block";
+            }
+            setInterval(fetchHistory, 5000); // Periodically fetch history every 5 seconds
+        };
+    </script>
+</body>
+</html>

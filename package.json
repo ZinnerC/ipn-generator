@@ -1,0 +1,17 @@
+{
+  "name": "ipn-generator",
+  "version": "1.0.0",
+  "description": "Internal Part Number Generator",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tabler/icons-webfont": "^3.24.0",
+    "express": "^4.17.1"
+  }
+}
