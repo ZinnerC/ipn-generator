@@ -1,10 +1,22 @@
 [
     {
-        "username": "user",
-        "password": "password"
+        "username": "cassian.zinner",
+        "password": "caz.1234"
     },
     {
-        "username": "admin",
-        "password": "admin123"
+        "username": "lucas.cano",
+        "password": "luc.1234"
+    },
+    {
+        "username": "jannik.vonrickenbach",
+        "password": "jvr.1234"
+    },
+    {
+        "username": "mario.afonso",
+        "password": "maf.1234"
+    },
+    {
+        "username": "andrii.horbenko",
+        "password": "aho.1234"
     }
 ]
