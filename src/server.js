@@ -7,9 +7,15 @@ const port = 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
-const countersFile = path.join(__dirname, '../counters.json');
-const historyFile = path.join(__dirname, '../history.json');
-const usersFile = path.join(__dirname, '../users.json');
+const dataDir = path.join(__dirname, '../data');
+const countersFile = path.join(dataDir, 'counters.json');
+const historyFile = path.join(dataDir, 'history.json');
+const usersFile = path.join(dataDir, 'users.json');
+
+// Ensure the data directory exists
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+}
 
 // Initialize counters if the file doesn't exist
 if (!fs.existsSync(countersFile)) {
@@ -28,6 +34,18 @@ if (!fs.existsSync(countersFile)) {
 // Initialize history if the file doesn't exist
 if (!fs.existsSync(historyFile)) {
     fs.writeFileSync(historyFile, JSON.stringify([]));
+}
+
+// Initialize users if the file doesn't exist
+if (!fs.existsSync(usersFile)) {
+    fs.writeFileSync(usersFile, JSON.stringify([]));
+
+    // Add an example user
+    const users = JSON.parse(fs.readFileSync(usersFile));
+    if (users.length === 0) {
+        users.push({ username: 'exampleUser', password: 'pa22w0rd' });
+        fs.writeFileSync(usersFile, JSON.stringify(users));
+    }
 }
 
 app.get('/users', (req, res) => {

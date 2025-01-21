@@ -1,0 +1,10 @@
+// files get created by service
+counter.json
+history.json
+users.json
+
+// env files
+.env
+
+// service files
+/ipn-generator-data
