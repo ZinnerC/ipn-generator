@@ -22,6 +22,7 @@ if (!fs.existsSync(countersFile)) {
     fs.writeFileSync(countersFile, JSON.stringify({
         "11": 0,
         "12": 0,
+        "13": 0,
         "21": 0,
         "31": 0,
         "32": 0,

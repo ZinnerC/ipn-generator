@@ -3,9 +3,9 @@ version: '3.8'
 services:
   web:
     # build: .
-    image: ipn-generator-web
+    image: ipn-generator-web:0.1.2
     ports:
       - "11080:3000"
     command: npm start
     volumes:
-      - ${IP_GENERATOR_EXT_VOLUME}:/usr/src/app/data
+      - ${IPN_GENERATOR_EXT_VOLUME}:/usr/src/app/data
